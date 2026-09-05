@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Gate Pass & QR Scanner | PULSE 2026</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <!-- Html5-QRCode CDN -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar glass">
+    <a href="/" class="brand">
+      <div class="brand-icon">📷</div>
+      <div class="brand-text">
+        <h1>PULSE Gate Scanner</h1>
+        <p>Volunteer Verification & Check-In Portal</p>
+      </div>
+    </a>
+
+    <div class="nav-links">
+      <div class="live-badge">
+        <span class="pulse-dot"></span>
+        <span id="camera-status-badge">Scanner Ready</span>
+      </div>
+      <a href="/" class="nav-link" target="_blank">🌐 Participant Hub</a>
+      <a href="/admin.html" class="nav-link" target="_blank">📊 Admin Portal</a>
+    </div>
+  </nav>
+
+  <main style="max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem;">
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;">
+      
+      <!-- Left Column: Camera Scanner & Manual Input -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        
+        <!-- Camera Scanner Card -->
+        <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg); text-align: center;">
+          <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Live Optical QR Scanner</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+            Align the participant's digital or printed QR code with the camera frame.
+          </p>
+
+          <div id="reader" style="width: 100%; min-height: 260px; background: rgba(0,0,0,0.5); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 1.25rem; border: 1px dashed var(--glass-border);"></div>
+
+          <button id="start-scanner-btn" class="btn btn-primary" style="width: 100%;">
+            📹 Start Camera Scanner
+          </button>
+        </div>
+
+        <!-- Manual Pass ID Lookup -->
+        <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Manual ID / Pass Lookup</h3>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            If the QR code is unreadable or phone screen is cracked, enter the Registration Pass ID.
+          </p>
+
+          <form id="manual-lookup-form" style="display: flex; gap: 0.75rem;">
+            <input type="text" id="manual-pass-input" class="form-control" placeholder="e.g. REG-TEC-XXXX" required style="font-family: monospace; text-transform: uppercase;">
+            <button type="submit" class="btn btn-secondary" style="white-space: nowrap;">🔍 Verify</button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Verification Results & Live Stream -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        
+        <!-- Verification Result Target Card -->
+        <div id="verify-result-card" style="display: none;">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div id="verify-empty-state" class="glass" style="padding: 3.5rem 2rem; text-align: center; border-radius: var(--radius-lg); border: 2px dashed var(--glass-border);">
+          <div style="font-size: 3rem; margin-bottom: 0.75rem; opacity: 0.8;">🎟️</div>
+          <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">Awaiting Pass Scan</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 320px; margin: 0 auto;">
+            Scan a participant's QR code or type their Pass ID on the left to verify their entry credentials.
+          </p>
+        </div>
+
+        <!-- Real-time Live Admitted Attendee Stream -->
+        <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">⏱️ Recent Venue Check-Ins</h3>
+            <span class="live-badge" style="font-size: 0.75rem;">Live Feed</span>
+          </div>
+
+          <ul id="checkin-history-list" style="list-style: none;">
+            <li style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1.5rem 0;">
+              No check-ins yet for this session.
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <script src="/js/scanner.js"></script>
+</body>
+</html>

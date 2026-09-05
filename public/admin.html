@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin & Management Console | PULSE 2026</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body style="padding-bottom: 5rem;">
+
+  <!-- Navbar -->
+  <nav class="navbar glass">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="/" class="brand">
+        <div class="brand-icon">📊</div>
+        <div class="brand-text">
+          <h1>PULSE Fest Console</h1>
+          <p>Real-Time Operations & Analytics</p>
+        </div>
+      </a>
+      <span class="live-badge" style="margin-left: 1rem;">
+        <span class="pulse-dot"></span> Live Sync Active
+      </span>
+    </div>
+
+    <div class="nav-links">
+      <a href="/" class="nav-link" target="_blank">🌐 Participant Portal</a>
+      <a href="/scanner.html" class="nav-link" target="_blank">📷 Check-in Portal</a>
+      <button class="btn btn-primary" onclick="openModal('new-event-modal')">+ Create Event</button>
+    </div>
+  </nav>
+
+  <main style="max-width: 1380px; margin: 2rem auto; padding: 0 2rem;">
+    
+    <!-- KPI Overview Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+      <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg); border-left: 4px solid var(--accent-primary);">
+        <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Total Registrations</div>
+        <div style="font-size: 2.25rem; font-weight: 800; color: #fff; margin-top: 4px;" id="kpi-total-regs">0</div>
+        <div style="font-size: 0.8rem; color: var(--accent-cyan); margin-top: 4px;">⚡ Instant real-time count</div>
+      </div>
+
+      <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg); border-left: 4px solid var(--accent-emerald);">
+        <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Checked-in Attendees</div>
+        <div style="font-size: 2.25rem; font-weight: 800; color: #fff; margin-top: 4px;" id="kpi-checked-in">0</div>
+        <div style="font-size: 0.8rem; color: var(--accent-emerald); margin-top: 4px;" id="kpi-checkin-pct">0% turnaround</div>
+      </div>
+
+      <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg); border-left: 4px solid var(--accent-amber);">
+        <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Total Fee Collected</div>
+        <div style="font-size: 2.25rem; font-weight: 800; color: #fff; margin-top: 4px;" id="kpi-revenue">₹0</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Across all registered teams</div>
+      </div>
+
+      <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg); border-left: 4px solid var(--accent-secondary);">
+        <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Active Events</div>
+        <div style="font-size: 2.25rem; font-weight: 800; color: #fff; margin-top: 4px;" id="kpi-total-events">0</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Tech, Cultural & Gaming</div>
+      </div>
+    </div>
+
+    <!-- Main Grid: Events & Analytics Breakdown -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 2.5rem;">
+      
+      <!-- Event Capacity & Check-in Status Table -->
+      <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+          <h3 style="font-size: 1.25rem; font-weight: 700;">Live Event Quotas & Check-in Status</h3>
+          <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 10px;" onclick="loadDashboardData()">🔄 Refresh</button>
+        </div>
+
+        <div class="data-table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Capacity / Booked</th>
+                <th>Live Check-ins</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="events-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quick Actions & Insights Column -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        
+        <!-- Live Broadcast Tool -->
+        <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+          <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">📢 Live Alert Broadcaster</h4>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">Instantly push notification alerts to all attendees.</p>
+
+          <form id="broadcast-form">
+            <div class="form-group">
+              <input type="text" id="alert-title" class="form-control" placeholder="Alert Title (e.g. Schedule Update)" required style="padding: 0.5rem 0.8rem; font-size: 0.85rem;">
+            </div>
+            <div class="form-group">
+              <textarea id="alert-message" class="form-control" rows="2" placeholder="Message content..." required style="padding: 0.5rem 0.8rem; font-size: 0.85rem;"></textarea>
+            </div>
+            <div class="form-group">
+              <select id="alert-event-select" class="form-control" style="padding: 0.5rem 0.8rem; font-size: 0.85rem;">
+                <option value="">All Events (Global)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 0.85rem; padding: 0.5rem;">Send Broadcast</button>
+          </form>
+        </div>
+
+        <!-- Demographics Breakdown -->
+        <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+          <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem;">🎓 Top Department Registrations</h4>
+          <ul id="dept-list" style="list-style: none;">
+            <!-- Populated dynamically -->
+          </ul>
+
+          <h4 style="font-size: 1rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.75rem;">🏷️ Category Distribution</h4>
+          <ul id="category-list" style="list-style: none;">
+            <!-- Populated dynamically -->
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Registrations Management & Export Table -->
+    <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg); margin-bottom: 2.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+        <div>
+          <h3 style="font-size: 1.25rem; font-weight: 700;">Participant Registrations Registry</h3>
+          <p style="font-size: 0.8rem; color: var(--text-secondary);">Real-time searchable participant records</p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <input type="text" id="reg-search-input" class="form-control" placeholder="Search name, email, pass ID..." style="width: 220px; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+          
+          <select id="reg-filter-event" class="form-control" style="width: 180px; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+            <option value="">All Events</option>
+          </select>
+
+          <select id="reg-filter-status" class="form-control" style="width: 150px; font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+            <option value="">All Check-in Status</option>
+            <option value="1">Checked In Only</option>
+            <option value="0">Pending Check-in</option>
+          </select>
+
+          <a href="/api/stats/export-csv" class="btn btn-success" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">📥 Export CSV</a>
+        </div>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Pass ID</th>
+              <th>Participant</th>
+              <th>College & Dept</th>
+              <th>Event</th>
+              <th>Status</th>
+              <th>Pass</th>
+            </tr>
+          </thead>
+          <tbody id="regs-table-body">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Winner Results Publishing Section -->
+    <div class="glass" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">🏆 Publish Winner & Leaderboard Results</h3>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">Announce event winners with real-time push to the participant screens.</p>
+
+      <form id="winner-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 150px; gap: 1rem; align-items: end;">
+        <div>
+          <label class="form-label">Event</label>
+          <select id="winner-event-select" class="form-control" required></select>
+        </div>
+        <div>
+          <label class="form-label">Position</label>
+          <select id="winner-position" class="form-control">
+            <option value="1">🥇 1st Place (Winner)</option>
+            <option value="2">🥈 2nd Place (Runner Up)</option>
+            <option value="3">🥉 3rd Place (2nd Runner Up)</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Winner Name / Team</label>
+          <input type="text" id="winner-name" class="form-control" placeholder="e.g. NeoMatrix Team" required>
+        </div>
+        <div>
+          <label class="form-label">College / Affiliation</label>
+          <input type="text" id="winner-college" class="form-control" placeholder="e.g. Stanford / IIT" required>
+        </div>
+        <div>
+          <label class="form-label">Prize / Trophy</label>
+          <input type="text" id="winner-prize" class="form-control" placeholder="e.g. ₹25,000 + Gold Trophy">
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; height: 42px;">Publish Result</button>
+        </div>
+      </form>
+    </div>
+
+  </main>
+
+  <!-- Create Event Modal -->
+  <div class="modal-backdrop" id="new-event-modal">
+    <div class="modal-content glass" style="max-width: 600px;">
+      <button class="modal-close" onclick="closeModal('new-event-modal')">&times;</button>
+      <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1.5rem;">Create New Fest Event</h2>
+
+      <form id="new-event-form">
+        <div class="form-group">
+          <label class="form-label">Event Title *</label>
+          <input type="text" id="evt-title" class="form-control" placeholder="e.g. UI/UX Design Sprint" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select id="evt-category" class="form-control">
+              <option value="Technical">Technical</option>
+              <option value="Cultural">Cultural</option>
+              <option value="Gaming">Gaming</option>
+              <option value="Workshop">Workshop</option>
+              <option value="Literary">Literary</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max Capacity (Seats) *</label>
+            <input type="number" id="evt-capacity" class="form-control" placeholder="50" min="1" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Venue Location *</label>
+            <input type="text" id="evt-venue" class="form-control" placeholder="e.g. Audi B, 3rd Floor" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date & Time *</label>
+            <input type="text" id="evt-time" class="form-control" placeholder="2026-09-14 10:00 AM" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Registration Fee (₹)</label>
+            <input type="number" id="evt-fee" class="form-control" placeholder="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prize Pool</label>
+            <input type="text" id="evt-prize" class="form-control" placeholder="₹20,000">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Banner Image URL</label>
+          <input type="url" id="evt-image" class="form-control" placeholder="https://images.unsplash.com/...">
+        </div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 8px; color: #fff; cursor: pointer;">
+            <input type="checkbox" id="evt-team"> This is a Team Event
+          </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Min Team Size</label>
+            <input type="number" id="evt-min-team" class="form-control" value="1" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max Team Size</label>
+            <input type="number" id="evt-max-team" class="form-control" value="4" min="1">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="evt-desc" class="form-control" rows="3" placeholder="Overview of guidelines and rules..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create Event & Broadcast</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Event Modal -->
+  <div class="modal-backdrop" id="edit-event-modal">
+    <div class="modal-content glass" style="max-width: 500px;">
+      <button class="modal-close" onclick="closeModal('edit-event-modal')">&times;</button>
+      <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 1.5rem;">Edit Event Capacity & Status</h3>
+
+      <form id="edit-event-form">
+        <input type="hidden" id="edit-evt-id">
+
+        <div class="form-group">
+          <label class="form-label">Event Title</label>
+          <input type="text" id="edit-evt-title" class="form-control" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Max Capacity</label>
+            <input type="number" id="edit-evt-capacity" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select id="edit-evt-status" class="form-control">
+              <option value="OPEN">OPEN</option>
+              <option value="FULL">FULL</option>
+              <option value="CLOSED">CLOSED</option>
+              <option value="COMPLETED">COMPLETED</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Venue</label>
+          <input type="text" id="edit-evt-venue" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Date & Time</label>
+          <input type="text" id="edit-evt-time" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Prize Pool</label>
+          <input type="text" id="edit-evt-prize" class="form-control">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

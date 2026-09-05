@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PULSE 2026 | Real-Time Fest Registration & Management</title>
+  <meta name="description" content="Official Real-Time Fest Registration, Live Slot Tracking, E-Pass & Event Management Portal">
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar glass">
+    <a href="/" class="brand">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-text">
+        <h1>PULSE 2026</h1>
+        <p>Annual Tech & Cultural Fest</p>
+      </div>
+    </a>
+
+    <div class="nav-links">
+      <div class="live-badge">
+        <span class="pulse-dot"></span>
+        <span><strong id="live-users-count">1</strong> Online</span>
+      </div>
+      <a href="#events-section" class="nav-link active">Events</a>
+      <a href="#leaderboard-section" class="nav-link">Leaderboard</a>
+      <button class="nav-link" onclick="openModal('lookup-modal')" style="background:none; border:none; cursor:pointer;">🎟️ Find My Pass</button>
+      <a href="/scanner.html" class="nav-link" target="_blank">📷 Check-in Portal</a>
+      <a href="/admin.html" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;" target="_blank">Admin Portal</a>
+    </div>
+  </nav>
+
+  <!-- Live Broadcast Alert Banner -->
+  <div id="broadcast-banner" class="broadcast-banner" style="display: none;">
+    <div class="broadcast-content">
+      <span class="broadcast-badge">📢 LIVE ALERT</span>
+      <span id="broadcast-message" style="font-size: 0.9rem; font-weight: 500; color: #fff;"></span>
+    </div>
+    <button onclick="document.getElementById('broadcast-banner').style.display='none'" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size: 1.2rem;">&times;</button>
+  </div>
+
+  <!-- Hero Section -->
+  <header class="hero-section">
+    <div class="hero-tag">
+      <span>🚀 PULSE 2026 IS LIVE</span> • <span>Real-Time Seat Booking Active</span>
+    </div>
+    <h1 class="hero-title">
+      Ignite Your Passion at <br>
+      <span class="gradient-text">The Ultimate College Fest</span>
+    </h1>
+    <p class="hero-subtitle">
+      Explore premier Technical Hackathons, Cultural Battles, Esports Arenas, and Masterclasses. Instant registration with dynamic QR E-Passes.
+    </p>
+
+    <div class="hero-stats glass">
+      <div class="hero-stat-item">
+        <div class="hero-stat-val" id="total-events-count">7</div>
+        <div class="hero-stat-label">Events Hosted</div>
+      </div>
+      <div class="hero-stat-item" style="border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); padding: 0 2rem;">
+        <div class="hero-stat-val" id="total-seats-left">--</div>
+        <div class="hero-stat-label">Slots Remaining</div>
+      </div>
+      <div class="hero-stat-item">
+        <div class="hero-stat-val" style="color: var(--accent-amber);">₹1.8L+</div>
+        <div class="hero-stat-label">Prize Pool</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Controls Bar: Category Filter + Search -->
+  <section class="controls-bar" id="events-section">
+    <div class="category-chips" id="category-chips">
+      <button class="chip-btn active" data-category="All">All Events</button>
+      <button class="chip-btn" data-category="Technical">💻 Technical</button>
+      <button class="chip-btn" data-category="Cultural">🎭 Cultural</button>
+      <button class="chip-btn" data-category="Gaming">🎮 Gaming</button>
+      <button class="chip-btn" data-category="Workshop">🔬 Workshops</button>
+    </div>
+
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="search-input" class="search-input" placeholder="Search event, venue...">
+    </div>
+  </section>
+
+  <!-- Events Grid Container -->
+  <main class="events-container" id="events-container">
+    <!-- Populated by JavaScript -->
+  </main>
+
+  <!-- Live Leaderboard & Winners Section -->
+  <section style="max-width: 1280px; margin: 0 auto 5rem; padding: 0 2rem;" id="leaderboard-section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <div>
+        <h2 style="font-size: 1.75rem; font-weight: 800;">🏆 Live Winners & Leaderboard</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Real-time result updates directly from the judging panels</p>
+      </div>
+      <div class="live-badge">
+        <span class="pulse-dot"></span>
+        <span>Auto-Syncing</span>
+      </div>
+    </div>
+
+    <div id="winners-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+      <!-- Populated dynamically -->
+    </div>
+  </section>
+
+  <!-- Registration Modal -->
+  <div class="modal-backdrop" id="reg-modal">
+    <div class="modal-content glass">
+      <button class="modal-close" onclick="closeModal('reg-modal')">&times;</button>
+      <h2 id="reg-modal-title" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 4px;">Register for Event</h2>
+      <p id="reg-modal-subtitle" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;"></p>
+
+      <form id="reg-form">
+        <input type="hidden" id="form-event-id">
+
+        <div class="form-group">
+          <label class="form-label">Full Name (Lead / Participant) *</label>
+          <input type="text" id="form-name" class="form-control" placeholder="e.g. Alex Rivera" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Email Address *</label>
+            <input type="email" id="form-email" class="form-control" placeholder="alex@univ.edu" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone / WhatsApp *</label>
+            <input type="tel" id="form-phone" class="form-control" placeholder="+91 98765 43210" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">College / University *</label>
+            <input type="text" id="form-college" class="form-control" placeholder="e.g. MIT / IIT / BITS" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department *</label>
+            <input type="text" id="form-dept" class="form-control" placeholder="e.g. CSE / IT / ECE" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Year of Study</label>
+          <select id="form-year" class="form-control">
+            <option value="1st Year">1st Year (Freshman)</option>
+            <option value="2nd Year">2nd Year (Sophomore)</option>
+            <option value="3rd Year">3rd Year (Junior)</option>
+            <option value="4th Year">4th Year (Senior)</option>
+            <option value="Postgraduate">Postgraduate</option>
+          </select>
+        </div>
+
+        <!-- Dynamic Team Details (shown only if team event) -->
+        <div id="team-fields-container" style="display: none;"></div>
+
+        <div style="margin-top: 1.5rem;">
+          <button type="submit" id="reg-submit-btn" class="btn btn-primary" style="width: 100%; padding: 0.85rem;">
+            Confirm & Generate E-Pass
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- E-Pass Badge Modal -->
+  <div class="modal-backdrop" id="pass-modal">
+    <div class="modal-content glass" style="max-width: 480px;">
+      <button class="modal-close" onclick="closeModal('pass-modal')">&times;</button>
+      <div id="ticket-content">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Pass Lookup Modal -->
+  <div class="modal-backdrop" id="lookup-modal">
+    <div class="modal-content glass" style="max-width: 420px;">
+      <button class="modal-close" onclick="closeModal('lookup-modal')">&times;</button>
+      <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 0.5rem;">🎟️ Retrieve E-Pass</h3>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">Enter your Registration Pass ID to view or download your QR pass badge.</p>
+
+      <form id="lookup-form">
+        <div class="form-group">
+          <label class="form-label">Pass / Registration ID</label>
+          <input type="text" id="lookup-pass-id" class="form-control" placeholder="e.g. REG-TEC-A8F2" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Find Pass</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/app.js"></script>
+</body>
+</html>
